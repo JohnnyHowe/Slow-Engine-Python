@@ -19,17 +19,17 @@ class Game:
 
     def update(self):
         self.keys_pressed = pygame.key.get_pressed()
-        self.dtime = self.clock.tick() / 1000
+        self.dtime = min(self.clock.tick() / 1000, 0.01)
         for item in self.objects:
             item.update(self)
-        self.physics_handler.update()
+        self.physics_handler.update(self)
         self.event_loop()
 
     def show(self):
-        self.window_obj.window.fill((255, 255, 255))
         for item in self.objects:
             item.show(self.window_obj)
         pygame.display.update()
+        self.window_obj.window.fill((255, 255, 255))
 
     def event_loop(self):
         self.pygame_events = pygame.event.get()

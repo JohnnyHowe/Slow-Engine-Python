@@ -18,11 +18,17 @@ class Window:
     def draw_rect(self, pos, size, color):
         pygame.draw.rect(self.window, color, self.display_rect(pos, size))
 
+    # def draw_circle(self, pos, radius, color):
+    #     pygame.draw.circle(self.window, pos, radius, color)
+
+    def draw_line(self, pos1, pos2, width, color):
+        pygame.draw.line(self.window, color, self.display_pos(pos1).tuple(), self.display_pos(pos2).tuple(), width)
+
     def display_pos(self, pos):
         """ pos (Vector2d): game position.
         Return (Vector2d) display position. """
         return Vector(pos.x * self.window_scale + self.window_size.x / 2,
-                                -pos.y * self.window_scale + self.window_size.y / 2)
+                      -pos.y * self.window_scale + self.window_size.y / 2)
 
     def display_size(self, size):
         """ size (Vector2d): game size.
