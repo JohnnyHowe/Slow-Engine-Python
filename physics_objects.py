@@ -5,7 +5,7 @@ import math
 from .vectors import Vector
 
 
-GRAVITY_ACCELERATION = 9.8
+GRAVITY_ACCELERATION = 9.8 * 3.5
 
 
 class PhysicsObject:
@@ -16,7 +16,9 @@ class PhysicsObject:
         self.gravity = False
         self.collider = None
         self.friction = 0
+        self.mass = self.size.x * self.size.y
         self.set_kwargs(kwargs)
+        self.max_speed = Vector(float("inf"), float("inf"))
 
     def set_kwargs(self, kwargs):
         for keyword, value in kwargs.items():
@@ -26,9 +28,12 @@ class PhysicsObject:
         self.physics_update(game_obj)
 
     def physics_update(self, game_obj):
+        self.apply_friction(game_obj)
+        self.move_player(game_obj)
         if self.gravity:
             self.apply_gravity(game_obj)
-        self.move_player(game_obj)
+        if self.collider:
+            self.collider.update(game_obj)
 
     def left(self):
         """ Return x-ordinate of the left side of the object (x pos - width / 2). """
@@ -51,6 +56,7 @@ class PhysicsObject:
 
     def move_player(self, game_obj):
         """ Apply self.velocity to self.pos. """
+        self.velocity.x = max(min(self.velocity.x, self.max_speed.x), -self.max_speed.x)
         self.pos += self.velocity * game_obj.dtime
 
     def show_block(self, window_obj, color=(0, 0, 0)):
@@ -69,13 +75,20 @@ class PhysicsObject:
         """ Decrease self.velocity, emulating gravity. """
         self.velocity.y -= GRAVITY_ACCELERATION * game_obj.dtime
 
-    def apply_friction(self, game_obj, other):
-        """ If self and other have contact
-        """
-        if self.collider.collided_with(other.collider):
-            collision_side = self.collider.collision_side(other.collider)
-            friction = self.friction + (other.friction * (1 - self.friction))
-            self.velocity.x -= collision_side.x * game_obj.dtime * friction
+    def apply_friction(self, game_obj):
+        for other in self.collider.contact[(0, 1)] + self.collider.contact[(0, -1)]:
+            # collision_side = self.collider.box_collision_side(other.collider)
+            if other.fixed:
+
+                # friction = self.friction + (other.friction * (1 - self.friction))
+                friction = self.friction * other.parent_obj.friction
+                normal_force = self.mass * GRAVITY_ACCELERATION
+
+                friction_force = friction * normal_force
+                friction_deceleration = friction_force / self.mass
+
+                if self.velocity.x:
+                    self.velocity.x -= friction_deceleration * game_obj.dtime * (self.velocity.x / abs(self.velocity.x))
 
     def wasd_movement(self, game_obj):
         """ If self.keyboard_movement, move the object from WASD key input. """
@@ -105,12 +118,26 @@ class BoxCollider:
         self.fixed = False
         # self.collide_with = "ALL"
         # self.collide_tag = "NONE"
+        self.contact = {}
+        self.reset_contact()
+
+    def reset_contact(self):
         self.contact = {
             (1, 0): [],
             (-1, 0): [],
             (0, 1): [],
             (0, -1): [],
         }
+
+    def update_contact(self, game_obj):
+        self.reset_contact()
+        for other in game_obj.objects:
+            if other != self.parent_obj:
+                if self.touching(other.collider):
+                    self.contact[self.box_collision_side(other.collider).tuple()].append(other.collider)
+
+    def update(self, game_obj):
+        self.update_contact(game_obj)
 
     def box_collision_side(self, other):
         """ Find the side of self that has collided with other.
@@ -245,7 +272,7 @@ class BoxCollider:
         if isinstance(other, BoxCollider):
             return self.box_touching(other)
         else:
-            raise ValueError("IS A NON BOX TOUCHING A BOX? IDK IT AIN'T CODED YET")
+            raise ValueError("CONTACT BETWEEN {} AND BoxCollider NOT CODED - BoxCollider.touching".format(type(other)))
 
     def box_touching(self, other):
         """ Is self touching other?

@@ -9,11 +9,12 @@ class Window:
         self.window_size = size
         self.window_scale = 1
         self.window = None
+        self.zoom = 1
         self.set_window()
 
     def set_window(self):
         self.window = pygame.display.set_mode(tuple(self.window_size))
-        self.window_scale = self.window_size.x / 20
+        self.window_scale = (self.window_size.x / 20) * self.zoom
 
     def draw_rect(self, pos, size, color):
         pygame.draw.rect(self.window, color, self.display_rect(pos, size))

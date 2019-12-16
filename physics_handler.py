@@ -19,10 +19,6 @@ class PhysicsHandler:
                             continue
 
                         self.collisions(object1, object2)
-                        # self.apply_friction(game_obj, object1, object2)
-
-    def apply_friction(self, game_obj, object1, object2):
-        object1.apply_friction(game_obj, object2)
 
     def collisions(self, object1, object2):
         if type(object1.collider) == type(object2.collider) == BoxCollider:
