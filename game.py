@@ -22,7 +22,6 @@ class Game:
         self.dtime = min(self.clock.tick() / 1000, 0.01)
         for item in self.objects:
             item.update(self)
-        self.physics_handler.update(self)
         self.event_loop()
 
     def show(self):

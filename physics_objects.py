@@ -28,8 +28,8 @@ class PhysicsObject:
         self.physics_update(game_obj)
 
     def physics_update(self, game_obj):
-        self.apply_friction(game_obj)
         self.move_player(game_obj)
+        self.apply_friction(game_obj)
         if self.gravity:
             self.apply_gravity(game_obj)
         if self.collider:
@@ -50,6 +50,22 @@ class PhysicsObject:
     def bottom(self):
         """ Return y-ordinate of the bottom of the object (y pos - height / 2). """
         return self.pos.y + self.size.y / 2
+
+    def top_left(self):
+        """ Return the position Vector of the top left corner. """
+        return self.pos + Vector(-self.width, self.height) / 2
+
+    def top_right(self):
+        """ Return the position Vector of the top right corner. """
+        return self.pos + Vector(self.width, self.height) / 2
+
+    def bottom_left(self):
+        """ Return the position Vector of the bottom left corner. """
+        return self.pos + Vector(-self.width, -self.height) / 2
+
+    def bottom_right(self):
+        """ Return the position Vector of the bottom_right corner. """
+        return self.pos + Vector(self.width, -self.height) / 2
 
     def show(self, window_obj):
         self.show_block(window_obj)
@@ -77,10 +93,8 @@ class PhysicsObject:
 
     def apply_friction(self, game_obj):
         for other in self.collider.contact[(0, 1)] + self.collider.contact[(0, -1)]:
-            # collision_side = self.collider.box_collision_side(other.collider)
             if other.fixed:
 
-                # friction = self.friction + (other.friction * (1 - self.friction))
                 friction = self.friction * other.parent_obj.friction
                 normal_force = self.mass * GRAVITY_ACCELERATION
 
@@ -116,8 +130,6 @@ class BoxCollider:
     def __init__(self, parent_obj):
         self.parent_obj = parent_obj
         self.fixed = False
-        # self.collide_with = "ALL"
-        # self.collide_tag = "NONE"
         self.contact = {}
         self.reset_contact()
 
@@ -129,15 +141,48 @@ class BoxCollider:
             (0, -1): [],
         }
 
-    def update_contact(self, game_obj):
+    def update(self, game_obj):
+        self.handle_collisions(game_obj)
         self.reset_contact()
         for other in game_obj.objects:
             if other != self.parent_obj:
-                if self.touching(other.collider):
-                    self.contact[self.box_collision_side(other.collider).tuple()].append(other.collider)
+                self.update_contact(other.collider)
 
-    def update(self, game_obj):
-        self.update_contact(game_obj)
+    def update_contact(self, other):
+        if self.touching(other):
+            self.contact[self.box_collision_side(other).tuple()].append(other)
+
+    def handle_collisions(self, game_obj):
+        """ If there has been a collision, stop the object's movement (in correct plane) and fix
+        object's position. """
+        for side, objects in self.contact.items():
+            for obj in objects:
+                self.fix_position(obj, Vector(side[0], side[1]))
+
+    def fix_position(self, other, collision_side):
+        """ Move self so that there is no overlap between self and other.
+        Call the same method on other as well.
+
+        Args:
+            other (collider): other collider to move.
+
+        Returns:
+            None
+        """
+        if self.fixed:
+            return
+        elif other.fixed:
+            overlap = self.overlap(other)
+
+            self.parent_obj.pos.x -= collision_side.x * overlap.x
+            self.parent_obj.pos.y -= collision_side.y * overlap.y
+
+            if self.parent_obj.velocity.y * collision_side.y > 0:
+                self.parent_obj.velocity.y = 0
+            if self.parent_obj.velocity.x * collision_side.x > 0:
+                self.parent_obj.velocity.x = 0
+        else:
+            raise ValueError("BoxCollider.fix_position given a collider not ready to handle.")
 
     def box_collision_side(self, other):
         """ Find the side of self that has collided with other.
@@ -152,36 +197,16 @@ class BoxCollider:
         Returns:
             side (Vector): Side of self that other has collided with.
         """
-        mock_self_obj = PhysicsObject(self.parent_obj.pos.copy(), self.parent_obj.size.copy())
-        mock_self_obj.collider = BoxCollider(mock_self_obj)
-        mock_other_obj = PhysicsObject(other.parent_obj.pos.copy(), other.parent_obj.size.copy())
-
-        # Scale so other is a square
-        y_scale = mock_other_obj.size.x / mock_other_obj.size.y
-        mock_other_obj.size.y = mock_other_obj.size.x
-        mock_other_obj.pos.y *= y_scale
-        mock_self_obj.size.y *= y_scale
-        mock_self_obj.pos.y *= y_scale
-
-        closest_corner = mock_self_obj.collider.closest_corner(mock_other_obj.pos)
-        closest_corner_pos = mock_self_obj.pos.copy()
-        closest_corner_pos.x += (mock_self_obj.size.x / 2) * closest_corner.x
-        closest_corner_pos.y += (mock_self_obj.size.y / 2) * closest_corner.y
-
-        # Find angle between mock_other_obj and closest_corner
-        angle = math.degrees(math.atan2(mock_other_obj.pos.y - closest_corner_pos.y,
-                                        mock_other_obj.pos.x - closest_corner_pos.x))
-        angle = (angle + 45) % 360
-        side_number = int(angle / 90)
+        overlap = self.overlap(other)
         side = Vector(0, 0)
-        if side_number == 1:
+        if abs(overlap.x) > abs(overlap.y):
             side.y = 1
-        elif side_number == 2:
-            side.x = -1
-        elif side_number == 3:
-            side.y = -1
         else:
             side.x = 1
+        if self.parent_obj.pos.x > other.parent_obj.pos.x:
+            side.x = -side.x
+        if self.parent_obj.pos.y > other.parent_obj.pos.y:
+            side.y = -side.y
         return side
 
     def closest_corner(self, pos):
@@ -278,7 +303,7 @@ class BoxCollider:
         """ Is self touching other?
 
         Two objects are considered touching if and only if there is some overlap or there
-        boundaries touch.
+        boundaries touch. Excluding corners.
 
         Args:
             other (collider): object that may be touching self.
@@ -286,7 +311,12 @@ class BoxCollider:
         Returns:
             touching (Bool): Whether self and other are touching.
         """
-        return (self.parent_obj.right() >= other.parent_obj.left() and
-                self.parent_obj.left() <= other.parent_obj.right() and
-                self.parent_obj.top() <= other.parent_obj.bottom() and
-                self.parent_obj.bottom() >= other.parent_obj.top())
+        touching = (self.parent_obj.right() >= other.parent_obj.left() and
+                    self.parent_obj.left() <= other.parent_obj.right() and
+                    self.parent_obj.top() <= other.parent_obj.bottom() and
+                    self.parent_obj.bottom() >= other.parent_obj.top())
+        overlapping_x = (self.parent_obj.right() > other.parent_obj.left() and
+                         self.parent_obj.left() < other.parent_obj.right())
+        overlapping_y = (self.parent_obj.top() < other.parent_obj.bottom() and
+                         self.parent_obj.bottom() > other.parent_obj.top())
+        return touching and (overlapping_x or overlapping_y)
