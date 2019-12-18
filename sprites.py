@@ -12,8 +12,8 @@ class Sprite:
         self.time_since_last_image_change = 0
 
     def show(self, window_obj, pos, scale=1):
-        image_number = self.image_sequences[self.current_sequence][self.current_sequence_number]
-        self.sprite_sheet.draw(window_obj, image_number, pos, scale)
+        image_pos = self.image_sequences[self.current_sequence][self.current_sequence_number]
+        self.sprite_sheet.draw(window_obj, image_pos, pos, scale)
 
     def cycle_images(self, game_obj, sequence, change_period):
 
@@ -51,7 +51,7 @@ class SpriteSheet:
         self.sheet_image = pygame.image.load(self.filename).convert_alpha()
 
     def set_scaled_image(self, window_obj, scale):
-        self.image_scale = scale * window_obj.window_scale / max(self.image_size)
+        self.image_scale = scale * window_obj.window_scale / self.image_size.mean()
         new_size = (self.sheet_image_size * self.image_scale).rounded().tuple()
         self.scaled_image = pygame.transform.scale(self.sheet_image, new_size)
 
@@ -70,11 +70,11 @@ class SpriteSheet:
             pos.y *= self.image_size.y
             self.image_positions[key] = pos
 
-    def draw(self, window_obj, image_num, pos, scale=1):
+    def draw(self, window_obj, image_pos, pos, scale=1):
         if scale != self.image_scale:
             self.set_scaled_image(window_obj, scale)
 
-        sheet_pos = (self.image_positions[image_num] * self.image_scale).ceiled()
+        sheet_pos = (self.image_positions[image_pos] * self.image_scale).ceiled()
         sheet_size = (self.image_size * self.image_scale).floored()
         sheet_rect = sheet_pos.tuple() + sheet_size.tuple()
 

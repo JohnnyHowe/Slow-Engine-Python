@@ -8,6 +8,7 @@ from .sprites import SpriteSheet
 
 class Game:
     def __init__(self):
+        pygame.init()
         self.window_obj = Window(Vector(800, 600))
 
         self.dtime = 0
