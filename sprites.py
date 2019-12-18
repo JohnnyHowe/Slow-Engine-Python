@@ -3,10 +3,24 @@ import pygame
 from .vectors import Vector
 
 
+class CompositeSprite:
+    def __init__(self, sprites, anchors):
+        self.sprites = sprites
+        self.anchors = anchors
+
+    def show(self, window_obj, pos, pos_anchor):
+        base_name = pos_anchor.index("->")
+        base_sprite = pos_anchor[:base_name]
+        self.sprites[base_sprite].show(window_obj, pos)
+        sprites_placed = {base_name}
+        for anchor in self.anchors:
+            pass
+
+
 class Sprite:
-    def __init__(self, sprite_sheet):
-        self.sprite_sheet = sprite_sheet
-        self.image_sequences = {}
+    def __init__(self, sheet_filename, sheet_size):
+        self.sprite_sheet = SpriteSheet(sheet_filename, sheet_size)
+        self.image_sequences = {"DEFAULT": [(0, 0)]}
         self.current_sequence = None
         self.current_sequence_number = 0    # Image index in sequence
         self.time_since_last_image_change = 0
@@ -47,11 +61,25 @@ class SpriteSheet:
         self.image_positions = []
         self.set_image_positions()
 
+        self.handles = None
+        self.load_handles()
+
     def load_image(self):
         self.sheet_image = pygame.image.load(self.filename).convert_alpha()
 
+    def load_handles(self):
+        extension_index = self.filename.rfind(".")
+        filename_no_ext = self.filename[:extension_index]
+        handle_file_name = filename_no_ext + "_handles.txt"
+        try:
+            handles_str = open(handle_file_name, "r").read()
+            self.handles = eval(handles_str)
+        except FileNotFoundError:
+            print("NO HANDLE FILE FOR " + self.filename)
+            self.handles = {}
+
     def set_scaled_image(self, window_obj, scale):
-        self.image_scale = scale * window_obj.window_scale / max(self.image_size)
+        self.image_scale = scale * window_obj.window_scale / min(self.image_size)
         new_size = (self.sheet_image_size * self.image_scale).rounded().tuple()
         self.scaled_image = pygame.transform.scale(self.sheet_image, new_size)
 
@@ -62,10 +90,13 @@ class SpriteSheet:
                                  self.sheet_image_size.y / self.sheet_size.y)
 
     def set_image_positions(self):
-        self.image_positions = []
+        self.image_positions = {}
         for i in range(self.num_cells):
-            self.image_positions.append(Vector((i % self.sheet_size.x) * self.image_size.x,
-                                               (i // self.sheet_size.x) * self.image_size.y))
+            key = (i % self.sheet_size.x, i // self.sheet_size.x)
+            pos = Vector(key[0], key[1])
+            pos.x *= self.image_size.x
+            pos.y *= self.image_size.y
+            self.image_positions[key] = pos
 
     def draw(self, window_obj, image_num, pos, scale=1):
         if scale != self.image_scale:
