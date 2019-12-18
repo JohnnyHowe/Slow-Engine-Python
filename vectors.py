@@ -19,9 +19,20 @@ class Vector:
         """ Return a tuple of the vector as (x, y) """
         return self.x, self.y
 
+    def rounded(self):
+        """ Return a rounded version of self. """
+        return Vector(round(self.x), round(self.y))
+
+    def mean(self):
+        """ Return the mean of self.x and self.y """
+        return (self.x + self.y) / 2
+
     def __str__(self):
         rounding_dp = 2
         return "Vector({}, {})".format(str(round(self.x, rounding_dp)), str(round(self.y, rounding_dp)))
+
+    def __repr__(self):
+        return self.__str__()
 
     def __iter__(self):
         for item in [self.x, self.y]:
@@ -32,6 +43,12 @@ class Vector:
 
     def __mul__(self, other):
         return Vector(self.x * other, self.y * other)
+
+    def __truediv__(self, other):
+        return Vector(self.x / other, self.y / other)
+
+    def __rtruediv__(self, other):
+        return Vector(self.x / other, self.y / other)
 
     def __sub__(self, other):
         return Vector(self.x - other.x, self.y - other.y)
