@@ -3,6 +3,7 @@ import pygame
 from .window import Window
 from .vectors import Vector
 from .physics_handler import PhysicsHandler
+from .sprites import SpriteSheet
 
 
 class Game:
