@@ -102,11 +102,7 @@ class PhysicsObject:
                 friction_deceleration = friction_force / self.mass
 
                 if self.velocity.x:
-                    velocity_change = friction_deceleration * game_obj.dtime * (self.velocity.x / abs(self.velocity.x))
-                    if abs(velocity_change) > abs(self.velocity.x):
-                        self.velocity.x = 0
-                    else:
-                        self.velocity.x -= velocity_change
+                    self.velocity.x -= friction_deceleration * game_obj.dtime * (self.velocity.x / abs(self.velocity.x))
 
     def wasd_movement(self, game_obj):
         """ If self.keyboard_movement, move the object from WASD key input. """
