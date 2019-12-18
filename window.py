@@ -4,13 +4,14 @@ from .vectors import Vector
 
 
 class Window:
-    def __init__(self, size):
+    def __init__(self, game_obj, size):
         """ size (Vector2d): size of window. """
         self.window_size = size
         self.window_scale = 1
         self.window = None
         self.zoom = 1
         self.set_window()
+        self.game_obj = game_obj
 
     def set_window(self):
         self.window = pygame.display.set_mode(tuple(self.window_size))
@@ -34,6 +35,11 @@ class Window:
         Return (Vector2d) display position. """
         return Vector(pos.x * self.window_scale + self.window_size.x / 2,
                       -pos.y * self.window_scale + self.window_size.y / 2)
+
+    def real_pos(self, rpos):
+        """ Undo display_pos """
+        return Vector((rpos.x - self.window_size.x / 2) / self.window_scale,
+                      (-(rpos.y - self.window_size.y / 2) / self.window_scale))
 
     def display_size(self, size):
         """ size (Vector2d): game size.

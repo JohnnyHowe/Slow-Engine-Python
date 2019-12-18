@@ -11,11 +11,17 @@ class Sprite:
         self.current_sequence_number = 0    # Image index in sequence
         self.time_since_last_image_change = 0
 
-    def show(self, window_obj, pos, scale=1):
+    def show(self, window_obj, pos, scale=1, rotation=0, flip=Vector(0, 0)):
         image_pos = self.image_sequences[self.current_sequence][self.current_sequence_number]
-        self.sprite_sheet.draw(window_obj, image_pos, pos, scale)
+        self.sprite_sheet.draw(window_obj, image_pos, pos, scale, rotation, flip)
 
     def cycle_images(self, game_obj, sequence, change_period):
+
+        if change_period < 0:
+            reverse_cycle = True
+            change_period = abs(change_period)
+        else:
+            reverse_cycle = False
 
         if self.current_sequence != sequence:
             self.current_sequence = sequence
@@ -24,7 +30,11 @@ class Sprite:
         elif self.time_since_last_image_change >= change_period:
             self.time_since_last_image_change = 0
             sequence_length = len(self.image_sequences[sequence])
-            self.current_sequence_number = (self.current_sequence_number + 1) % sequence_length
+
+            if reverse_cycle:
+                self.current_sequence_number = (self.current_sequence_number - 1) % sequence_length
+            else:
+                self.current_sequence_number = (self.current_sequence_number + 1) % sequence_length
 
         self.time_since_last_image_change += game_obj.dtime
 
@@ -70,7 +80,7 @@ class SpriteSheet:
             pos.y *= self.image_size.y
             self.image_positions[key] = pos
 
-    def draw(self, window_obj, image_pos, pos, scale=1):
+    def draw(self, window_obj, image_pos, pos, scale=1, rotation=0, flip=Vector(0, 0)):
         if scale != self.image_scale:
             self.set_scaled_image(window_obj, scale)
 
@@ -78,5 +88,20 @@ class SpriteSheet:
         sheet_size = (self.image_size * self.image_scale).floored()
         sheet_rect = sheet_pos.tuple() + sheet_size.tuple()
 
-        display_pos = window_obj.display_pos(pos) - Vector(sheet_rect[2], sheet_rect[3]) / 2
-        window_obj.window.blit(self.scaled_image, display_pos.tuple(), sheet_rect)
+        image = pygame.Surface(sheet_size.tuple(), pygame.SRCALPHA)
+        image.blit(self.scaled_image, (0, 0), sheet_rect)
+
+        display_pos = window_obj.display_pos(pos)
+
+        if rotation:
+            image = pygame.transform.rotate(image, -rotation)
+            image_rect = image.get_rect()
+            display_pos.x -= image_rect.width / 2
+            display_pos.y -= image_rect.height / 2
+        else:
+            display_pos -= Vector(sheet_rect[2], sheet_rect[3]) / 2
+
+        if flip.x or flip.y:
+            image = pygame.transform.flip(image, bool(flip.x), bool(flip.y))
+
+        window_obj.window.blit(image, display_pos.tuple())
