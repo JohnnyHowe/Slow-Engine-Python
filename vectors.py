@@ -1,5 +1,5 @@
 """ Module containing vectors to be used for size and positions. """
-from math import sqrt
+from math import sqrt, ceil
 
 
 class Vector:
@@ -22,6 +22,14 @@ class Vector:
     def rounded(self):
         """ Return a rounded version of self. """
         return Vector(round(self.x), round(self.y))
+
+    def floored(self):
+        """ Return a floored version of self. """
+        return Vector(int(self.x), int(self.y))
+
+    def ceiled(self):
+        """ Return a rounded up version of self. """
+        return Vector(ceil(self.x), ceil(self.y))
 
     def mean(self):
         """ Return the mean of self.x and self.y """
