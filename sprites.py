@@ -44,7 +44,7 @@ class SpriteSheet:
         self.image_size = None
         self.set_image_size()
 
-        self.image_positions = []
+        self.image_positions = {}
         self.set_image_positions()
 
     def load_image(self):
@@ -62,10 +62,13 @@ class SpriteSheet:
                                  self.sheet_image_size.y / self.sheet_size.y)
 
     def set_image_positions(self):
-        self.image_positions = []
+        self.image_positions = {}
         for i in range(self.num_cells):
-            self.image_positions.append(Vector((i % self.sheet_size.x) * self.image_size.x,
-                                               (i // self.sheet_size.x) * self.image_size.y))
+            key = (i % self.sheet_size.x, i // self.sheet_size.x)
+            pos = Vector(key[0], key[1])
+            pos.x *= self.image_size.x
+            pos.y *= self.image_size.y
+            self.image_positions[key] = pos
 
     def draw(self, window_obj, image_num, pos, scale=1):
         if scale != self.image_scale:
