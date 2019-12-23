@@ -3,6 +3,7 @@ import pygame
 import math
 
 from .vectors import Vector
+from .coordinate_geometry import Line
 
 
 GRAVITY_ACCELERATION = 9.8 * 3.5
@@ -29,11 +30,14 @@ class PhysicsObject:
 
     def physics_update(self, game_obj):
         self.move_player(game_obj)
-        self.apply_friction(game_obj)
         if self.gravity:
             self.apply_gravity(game_obj)
         if self.collider:
-            self.collider.update(game_obj)
+            self.collider_update(game_obj)
+
+    def collider_update(self, game_obj):
+        self.apply_friction(game_obj)
+        self.collider.update(game_obj)
 
     def left(self):
         """ Return x-ordinate of the left side of the object (x pos - width / 2). """
@@ -324,3 +328,28 @@ class BoxCollider:
         overlapping_y = (self.parent_obj.top() < other.parent_obj.bottom() and
                          self.parent_obj.bottom() > other.parent_obj.top())
         return touching and (overlapping_x or overlapping_y)
+
+    def border_lines(self):
+        """ Where are the borders of self?
+
+        Args:
+            None
+
+        Returns:
+            lines (List): A list of tuples containing the line and vector.
+        """
+        pos = self.parent_obj.pos
+        size = self.parent_obj.size
+        corners = {
+            (-1, 1): Vector(pos.x - size.x / 2, pos.y + size.y / 2),
+            (1, 1): Vector(pos.x + size.x / 2, pos.y + size.y / 2),
+            (1, -1): Vector(pos.x + size.x / 2, pos.y - size.y / 2),
+            (-1, -1): Vector(pos.x - size.x / 2, pos.y - size.y / 2),
+        }
+        return [
+            (Line(corners[(-1, 1)], corners[(1, 1)]), Vector(0, 1)),
+            (Line(corners[(1, 1)], corners[(1, -1)]), Vector(1, 0)),
+            (Line(corners[(1, -1)], corners[(-1, -1)]), Vector(0, -1)),
+            (Line(corners[(-1, -1)], corners[(-1, 1)]), Vector(-1, 0)),
+        ]
+
