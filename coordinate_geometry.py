@@ -1,3 +1,4 @@
+from math import atan2, degrees
 from .vectors import Vector
 
 
@@ -54,6 +55,10 @@ class Line:
             if in_border_range and in_border_domain:
                 intersections.append((pos, side))
         return intersections
+
+    def angle(self):
+        """ Return the angle of the line (pos1 to pos2). """
+        return (-(90 + degrees(atan2(self.pos1.y - self.pos2.y, self.pos1.x - self.pos2.x)))) % 360
 
     def __str__(self):
         return "Line({}, {})".format(self.pos1.tuple(), self.pos2.tuple())

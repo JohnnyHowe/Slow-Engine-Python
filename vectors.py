@@ -31,6 +31,10 @@ class Vector:
         """ Return a rounded up version of self. """
         return Vector(ceil(self.x), ceil(self.y))
 
+    def dot(self, other):
+        """ Return the dot product of self and other. """
+        return self.x * other.x + self.y * other.y
+
     def mean(self):
         """ Return the mean of self.x and self.y """
         return (self.x + self.y) / 2

@@ -12,11 +12,13 @@ class Sprite:
         self.time_since_last_image_change = 0
 
     def show(self, window_obj, pos, scale=1, rotation=0, flip=Vector(0, 0)):
-        image_pos = self.image_sequences[self.current_sequence][self.current_sequence_number]
+        if self.current_sequence:
+            image_pos = self.image_sequences[self.current_sequence][self.current_sequence_number]
+        else:
+            image_pos = (0, 0)
         self.sprite_sheet.draw(window_obj, image_pos, pos, scale, rotation, flip)
 
-    def cycle_images(self, game_obj, sequence, change_period):
-
+    def set_cycle(self, game_obj, sequence, change_period):
         if change_period < 0:
             reverse_cycle = True
             change_period = abs(change_period)
