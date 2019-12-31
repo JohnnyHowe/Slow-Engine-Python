@@ -1,7 +1,5 @@
-from .game import Game
-from .sprites import Sprite, SpriteSheet
+from .engine import Engine
+from .geometery import Vector
 
-from .physics_objects import PhysicsObject, BoxCollider
-
-from .vectors import Vector
-from .coordinate_geometry import Line
+import slowEngine.controllers
+import slowEngine.physics
