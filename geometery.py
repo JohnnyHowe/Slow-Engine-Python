@@ -44,6 +44,9 @@ class Vector:
     def __repr__(self):
         return self.__str__()
 
+    def __abs__(self):
+        return Vector(abs(self.x), abs(self.y))
+
 
 class Rect:
     def __init__(self, x, y, w, h):

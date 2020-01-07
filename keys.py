@@ -2,16 +2,34 @@ import pygame
 
 
 class KeyInput:
+    def __init__(self):
+        self.pressed = false_dictionary(key_names.values())
+        self.last_pressed = false_dictionary(key_names.values())
+        self.tapped = false_dictionary(key_names.values())
 
-    @staticmethod
-    def is_pressed(key_name):
-        """ Is the key_name (str) pressed? """
+    def update_pressed(self):
         keys_pressed = pygame.key.get_pressed()
-        codes = key_codes[key_name.upper()]
-        for code in codes:
+        for code, name in key_names.items():
             if keys_pressed[code]:
-                return True
-        return False
+                self.pressed[name] = 1
+            else:
+                self.pressed[name] = 0
+
+    def update_tapped(self):
+        for name in self.pressed.keys():
+            self.tapped[name] = self.pressed[name] - self.last_pressed[name]
+
+    def update(self):
+        self.last_pressed = dict(self.pressed)
+        self.update_pressed()
+        self.update_tapped()
+
+
+def false_dictionary(keys, defualt=0):
+    dic = {}
+    for key in keys:
+        dic[key] = defualt
+    return dic
 
 
 def invert_dict(dic):

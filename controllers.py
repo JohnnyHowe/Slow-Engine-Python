@@ -2,10 +2,10 @@ from .geometery import Vector
 
 
 WASD_Controls = {
-    "w": Vector(0, 1),
-    "s": Vector(0, -1),
-    "a": Vector(-1, 0),
-    "d": Vector(1, 0),
+    "W": Vector(0, 1),
+    "S": Vector(0, -1),
+    "A": Vector(-1, 0),
+    "D": Vector(1, 0),
 }
 
 
@@ -59,7 +59,7 @@ class KeyBoardControllerFixed(_KeyBoardController):
     def update(self, engine):
         self.parent.velocity = Vector(0, 0)
         for key_name, movement in self.controls.items():
-            if engine.keyboard.is_pressed(key_name):
+            if engine.keyboard.pressed[key_name]:
                 self.parent.velocity += movement * engine.clock.dtime * self.speed
 
 
@@ -72,11 +72,15 @@ class KeyBoardControllerSmooth(_KeyBoardController):
 
     def update(self, engine):
         total_movement = Vector(0, 0)
+        possible_axes = Vector(0, 0)
         for key_name, movement in self.controls.items():
-            if engine.keyboard.is_pressed(key_name):
+            possible_axes += abs(movement)
+            if engine.keyboard.pressed[key_name]:
                 total_movement += movement
 
         self.parent.velocity += total_movement * engine.clock.dtime * self.acceleration
-        self.slow_x(engine)
-        self.slow_y(engine)
+        if possible_axes.x:
+            self.slow_x(engine)
+        if possible_axes.y:
+            self.slow_y(engine)
 

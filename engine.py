@@ -18,6 +18,7 @@ class Engine:
         self.set_event_dict()
         self.window.update(self)
         self.mouse.update(self)
+        self.keyboard.update()
 
     def set_window(self, size):
         self.window = Window(size)

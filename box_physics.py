@@ -2,24 +2,23 @@ from math import sqrt
 from .game_display import draw_game_rect, draw_game_circle
 from .geometery import *
 
+GRAVITATIONAL_CONSTANT = 9.8
+
 
 class BoxObject:
-    def __init__(self, rect, mass=None):
+    def __init__(self, rect):
         """
         Args:
             rect (Rect): Rect of box (in game units).
             mass (int): Mass of object (If None, mass will be set to width * height).
         """
         self.rect = rect
-
-        if mass is not None: self.mass = mass
-        else: self.mass = rect.w * rect.h
-
         self.velocity = Vector(0, 0)
         self.max_velocity = float("inf")
 
         self.controller = None
         self.collider = None
+        self.gravity = False
 
     def show_block(self, engine, color=(0, 200, 0)):
         draw_game_rect(engine.window, self.rect, color)
@@ -46,6 +45,9 @@ class BoxObject:
             self.velocity.x /= scale
             self.velocity.y /= scale
 
+    def apply_gravity(self, engine):
+        self.velocity.y -= engine.clock.dtime * GRAVITATIONAL_CONSTANT
+
     def __str__(self):
         collider_str = None
         if self.collider:
@@ -57,7 +59,7 @@ class BoxObject:
 
 
 class BoxCollider:
-    def __init__(self, parent, bounce=0):
+    def __init__(self, parent, bounce=0, mass=None):
         """
         Args:
             parent (BoxObject): Object to have velocity, pos, etc viewed and changed.
@@ -66,20 +68,27 @@ class BoxCollider:
         self.parent = parent
         self.bounce = bounce
 
-    def is_collided_with(self, colliders):
+        if mass is not None: self.mass = mass
+        else: self.mass = parent.rect.w * parent.rect.h
+
+    def has_collided_with(self, colliders):
         """ Has self collided with any of the colliders? """
         for collider in colliders:
             if self.is_collided_box(collider):
                 return True
         return False
 
-    def run_collisions(self, colliders):
-        """ Loop through all the colliders and run the collision code. """
+    def run_collisions(self, colliders=[], objects=[]):
         for collider in colliders:
-            if isinstance(collider, BoxCollider):
-                self.box_collision(collider)
-            else:
-                raise Exception("Attempting to detect collision between box and non-box.")
+            self.run_object_collision(collider)
+        for obj in objects:
+            self.run_object_collision(obj.collider)
+
+    def run_object_collision(self, collider):
+        if isinstance(collider, BoxCollider):
+            self.box_collision(collider)
+        else:
+            raise Exception("Attempting to detect collision between box and non-box.")
 
     def box_overlap(self, other):
         """ What is the size of the overlap between self and other? """
@@ -118,8 +127,8 @@ class BoxCollider:
     def box_collision(self, other):
         """ If self has collided with other, move them so they aren't collided. """
         collision_side = self.box_collision_side(other)
-        if (self.parent.mass == other.parent.mass == float("inf") or
-            self.parent.mass == other.parent.mass == 0):
+        if (self.mass == other.mass == float("inf") or
+            self.mass == other.mass == 0):
             raise Exception("TWO OBJECTS WITH INFINITE MASS COLLIDED WTF DO I DO.")
         else:
             if collision_side.x or collision_side.y:
@@ -134,9 +143,9 @@ class BoxCollider:
             other (BoxCollider): collider that self has collided with.
             collision_side (Vector): Side of self that has collided with other.
         """
-        if self.parent.mass == float("inf") or other.parent.mass == 0:
+        if self.mass == float("inf") or other.mass == 0:
             other.box_collision_rectify_velocity(self, collision_side)
-        elif other.parent.mass == float("inf") or self.parent.mass == 0:
+        elif other.mass == float("inf") or self.mass == 0:
             self.fixed_elastic_collision(other, collision_side)
         else:
             # UNFINISHED
@@ -169,11 +178,11 @@ class BoxCollider:
             self_velocity = self.parent.velocity.y
             other_velocity = other.parent.velocity.y
 
-        self_momentum = self.parent.mass * self_velocity
-        other_momentum = other.parent.mass * other_velocity
+        self_momentum = self.mass * self_velocity
+        other_momentum = other.mass * other_velocity
 
         total_momentum = self_momentum + other_momentum
-        total_mass = self.parent.mass + other.parent.mass
+        total_mass = self.mass + other.mass
         final_velocity = total_momentum / total_mass
 
         if collision_side.x:
