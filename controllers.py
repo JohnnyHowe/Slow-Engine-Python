@@ -17,11 +17,9 @@ Arrow_Controls = {
 }
 
 
-class KeyBoardController:
+class _KeyBoardController:
     def __init__(self, parent):
         self.parent = parent
-        self.deceleration = 500
-        self.controls = WASD_Controls
 
     def slow_x(self, engine):
         if self.parent.velocity.x:
@@ -52,22 +50,25 @@ class MouseController:
             self.parent.velocity = Vector(0, 0)
 
 
-class KeyBoardControllerFixed(KeyBoardController):
-    def __init__(self, parent):
-        KeyBoardController.__init__(self, parent)
+class KeyBoardControllerFixed(_KeyBoardController):
+    def __init__(self, parent, controls):
+        _KeyBoardController.__init__(self, parent)
+        self.speed = 1000
+        self.controls = controls
 
     def update(self, engine):
         self.parent.velocity = Vector(0, 0)
         for key_name, movement in self.controls.items():
             if engine.keyboard.is_pressed(key_name):
-                self.parent.velocity += movement * engine.clock.dtime * 10000
+                self.parent.velocity += movement * engine.clock.dtime * self.speed
 
 
-class KeyBoardControllerSmooth(KeyBoardController):
-    def __init__(self, parent):
-        KeyBoardController.__init__(self, parent)
+class KeyBoardControllerSmooth(_KeyBoardController):
+    def __init__(self, parent, controls):
+        _KeyBoardController.__init__(self, parent)
         self.deceleration = 50
         self.acceleration = 100
+        self.controls = controls
 
     def update(self, engine):
         total_movement = Vector(0, 0)

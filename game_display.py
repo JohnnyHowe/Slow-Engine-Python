@@ -18,6 +18,11 @@ def game_pos(pos, window):
     return gpos
 
 
+def game_size(size, window):
+    """ Convert the display size to game units. """
+    return size / window.game_scale
+
+
 def display_pos(pos, window):
     """ Where should this game position be displayed?
 
@@ -47,26 +52,52 @@ def display_size(size, window):
     return size * window.game_scale
 
 
-def draw_rect(window, pos, size, color):
+def display_line(line, window):
+    """ Convert the line game positions to display positions. """
+    return Line(display_pos(line.start, window), display_pos(line.end, window))
+
+
+def display_rect(rect, window):
+    """ Convert the rect game position and size to display units. """
+    pos = display_pos(rect.pos(), window)
+    size = display_size(rect.size(), window)
+    return Rect(pos.x, pos.y, size.x, size.y)
+
+
+def draw_rect(window, rect, color):
     """ Draw a rectangle.
 
     Args:
         window: (window.Window): current window object.
-        pos (Vector): center window position of rectangle.
-        size (Vector): window size of rect.
+        rect (Rect): rectangle in pixels.
         color (tuple): color of rect.
     """
-    rect = tuple(pos - size / 2) + tuple(size)
-    pygame.draw.rect(window.window, color, rect)
+    pygame.draw.rect(window.window, color, tuple(rect.pos() - rect.size() / 2) + tuple(rect.size()))
 
 
-def draw_game_rect(window, pos, size, color):
+def draw_game_rect(window, rect, color):
     """ Draw a rectangle.
 
     Args:
         window: (window.Window): current window object.
-        pos (Vector): center game position of rectangle.
-        size (Vector): game size of rect.
+        rect (Rect): rectangle in game units.
         color (tuple): color of rect.
     """
-    draw_rect(window, display_pos(pos, window), display_size(size, window), color)
+    draw_rect(window, display_rect(rect, window), color)
+
+
+def draw_line(window, line, width, color):
+    pygame.draw.line(window.window, color, tuple(line.start), tuple(line.end), width)
+
+
+def draw_game_line(window, line, width, color):
+    display_line = Line(display_pos(line.start, window), display_pos(line.end, window))
+    draw_line(window, display_line, width, color)
+
+
+def draw_circle(window, pos, radius, color):
+    pygame.draw.circle(window.window, color, tuple(round(pos)), int(radius))
+
+
+def draw_game_circle(window, pos, radius, color):
+    draw_circle(window, display_pos(pos, window), radius * window.game_scale, color)
