@@ -1,6 +1,6 @@
 from math import sqrt
-from .game_display import draw_game_rect, draw_game_circle
-from .geometery import *
+from slowEngine.game_display import draw_game_rect, draw_game_circle
+from slowEngine.geometery import *
 
 GRAVITATIONAL_CONSTANT = 9.8
 
@@ -20,14 +20,22 @@ class BoxObject:
         self.collider = None
         self.gravity = False
 
-    def show_block(self, engine, color=(0, 200, 0)):
-        draw_game_rect(engine.window, self.rect, color)
+    def get_collision_rect(self):
+        return self.rect
+
+    def get_display_rect(self):
+        return self.rect
+
+    def show_block(self, engine, color=(0, 200, 0), width=None):
+        use_rect = self.get_display_rect()
+        draw_game_rect(engine.window, use_rect, color, width=width)
 
     def show_circle(self, engine, color=(0, 200, 0)):
-        draw_game_circle(engine.window, self.rect.pos(), min(self.rect.size()) / 2, color)
+        draw_game_circle(engine.window, self.get_display_rect().pos(), min(self.get_display_rect().size()) / 2, color)
 
     def apply_velocity(self, engine):
         self.rect.set_pos(self.rect.pos() + self.velocity * engine.clock.dtime)
+        self.cap_velocity()
 
     def update(self, engine):
         self.cap_velocity()
@@ -39,11 +47,15 @@ class BoxObject:
             self.controller.update(engine)
 
     def cap_velocity(self):
-        current_velocity = self.velocity.length()
-        scale = current_velocity / self.max_velocity
-        if scale > 1:
-            self.velocity.x /= scale
-            self.velocity.y /= scale
+        if isinstance(self.max_velocity, Vector):
+            self.velocity.x = min(max(self.velocity.x, -self.max_velocity.x), self.max_velocity.x)
+            self.velocity.y = min(max(self.velocity.y, -self.max_velocity.y), self.max_velocity.y)
+        else:
+            current_velocity = self.velocity.length()
+            scale = current_velocity / self.max_velocity
+            if scale > 1:
+                self.velocity.x /= scale
+                self.velocity.y /= scale
 
     def apply_gravity(self, engine):
         self.velocity.y -= engine.clock.dtime * GRAVITATIONAL_CONSTANT
@@ -68,37 +80,62 @@ class BoxCollider:
         self.parent = parent
         self.bounce = bounce
 
-        if mass is not None: self.mass = mass
-        else: self.mass = parent.rect.w * parent.rect.h
+        if mass is not None:
+            self.mass = mass
+        else:
+            self.mass = parent.get_collision_rect().w * parent.rect.h
 
     def has_collided_with(self, colliders):
         """ Has self collided with any of the colliders? """
         for collider in colliders:
-            if self.is_collided_box(collider):
-                return True
+            collision = self.is_collided_box(collider)
+            if collision:
+                return collision
         return False
 
     def run_collisions(self, colliders=[], objects=[]):
+        collisions = []
         for collider in colliders:
-            self.run_object_collision(collider)
+            collision = self.run_object_collision(collider)
+            if collision:
+                collisions.append(collision)
         for obj in objects:
-            self.run_object_collision(obj.collider)
+            collision = self.run_object_collision(obj.collider)
+            if collision:
+                collisions.append(collision)
+        return collisions
 
     def run_object_collision(self, collider):
+        """ Check if self and collider have collided.
+
+        Args:
+            collider (Collider): object/collider to check for collision.
+
+        Returns:
+            collision (Collision or None):  if None: objects didn't collide.
+
+        """
         if isinstance(collider, BoxCollider):
-            self.box_collision(collider)
+            return self.box_collision(collider)
         else:
             raise Exception("Attempting to detect collision between box and non-box.")
 
-    def box_overlap(self, other):
+    def box_overlap(self, other, negatives=False):
         """ What is the size of the overlap between self and other? """
-        if self.is_collided_box(other):
-            return Vector(abs(min(self.parent.rect.right(), other.parent.rect.right())
-                              - max(self.parent.rect.left(), other.parent.rect.left())),
-                          abs(min(self.parent.rect.top(), other.parent.rect.top())
-                              - max(self.parent.rect.bottom(), other.parent.rect.bottom())))
+        if self.is_collided_box(other) or negatives:
+            overlap = Vector(min(self.parent.get_collision_rect().right(),
+                                 other.parent.get_collision_rect().right())
+                             - max(self.parent.get_collision_rect().left(),
+                                   other.parent.get_collision_rect().left()),
+                             min(self.parent.get_collision_rect().top(),
+                                 other.parent.get_collision_rect().top())
+                             - max(self.parent.get_collision_rect().bottom(),
+                                   other.parent.get_collision_rect().bottom()))
         else:
-            return Vector(0, 0)
+            overlap = Vector(0, 0)
+        if not negatives:
+            overlap = abs(overlap)
+        return overlap
 
     def box_collision_side(self, other):
         """ What side has self collided with other on? """
@@ -109,31 +146,66 @@ class BoxCollider:
                 side.y = 1
             else:
                 side.x = 1
-            if self.parent.rect.x > other.parent.rect.x:
+            if self.parent.get_collision_rect().x > other.parent.get_display_rect().x:
                 side.x = -side.x
-            if self.parent.rect.y > other.parent.rect.y:
+            if self.parent.get_collision_rect().y > other.parent.get_collision_rect().y:
                 side.y = -side.y
             return side
         else:
             return Vector(0, 0)
 
+    def is_touching_box(self, other):
+        """ Is self touching other?
+        This differs to is_collided_box by the boundaries.
+        is_collided_box only checks for greater or less than. this checks equality as well. """
+        return (self.parent.get_collision_rect().left() <= other.parent.get_collision_rect.right() and
+                self.parent.get_collision_rect().right() >= other.parent.get_collision_rect.left() and
+                self.parent.get_collision_rect().bottom() <= other.parent.get_collision_rect.top() and
+                self.parent.get_collision_rect().top() >= other.parent.get_collision_rect.bottom())
+
+    def box_touching_side(self, other):
+        """ What side of self is touching other? """
+        overlap = self.box_overlap(other, negatives=True)
+        side = Vector(0, 0)
+        if overlap.x == overlap.y == 0:
+            return Vector(0, 0)
+        if abs(overlap.x) > abs(overlap.y):
+            side.y = -1
+            if other.parent.get_collision_rect().y > self.parent.get_collision_rect().y:
+                side.y = 1
+        if abs(overlap.x) < abs(overlap.y):
+            side.x = -1
+            if other.parent.get_collision_rect().x > self.parent.get_collision_rect().x:
+                side.x = 1
+        return side
+
     def is_collided_box(self, other):
         """ Is there some overlap between self and other? """
-        return (self.parent.rect.left() < other.parent.rect.right() and
-                self.parent.rect.right() > other.parent.rect.left() and
-                self.parent.rect.bottom() < other.parent.rect.top() and
-                self.parent.rect.top() > other.parent.rect.bottom())
+        return (self.parent.get_collision_rect().left() < other.parent.get_collision_rect().right() and
+                self.parent.get_collision_rect().right() > other.parent.get_collision_rect().left() and
+                self.parent.get_collision_rect().bottom() < other.parent.get_collision_rect().top() and
+                self.parent.get_collision_rect().top() > other.parent.get_collision_rect().bottom())
 
     def box_collision(self, other):
-        """ If self has collided with other, move them so they aren't collided. """
+        """ If self has collided with other, move them so they aren't collided.
+
+        Args:
+            other (BoxCollider): collider/object to check collision for.
+
+        Returns:
+            collision (Collision or None):  if None: objects didn't collide.
+        """
         collision_side = self.box_collision_side(other)
+        collision = None
         if (self.mass == other.mass == float("inf") or
-            self.mass == other.mass == 0):
+                self.mass == other.mass == 0):
             raise Exception("TWO OBJECTS WITH INFINITE MASS COLLIDED WTF DO I DO.")
         else:
             if collision_side.x or collision_side.y:
+                collision = BoxCollision(self, other, collision_side)
                 self.box_collision_rectify_pos(other, collision_side)
                 self.box_collision_rectify_velocity(other, collision_side)
+        return collision
 
     def box_collision_rectify_velocity(self, other, collision_side):
         """ Assuming a collision on the y axis, rectify the velocity in the y axis.
@@ -194,8 +266,8 @@ class BoxCollider:
 
     def box_collision_rectify_pos(self, other, collision_side):
         """ Assuming a collision, rectify the pos. """
-        self_rect = self.parent.rect
-        other_rect = other.parent.rect
+        self_rect = self.parent.get_collision_rect()
+        other_rect = other.parent.get_collision_rect()
         if collision_side.x:
             self_rect.x = other_rect.x - collision_side.x * (other_rect.w + self_rect.w) / 2
         else:
@@ -204,3 +276,14 @@ class BoxCollider:
     def __str__(self):
         return "BoxCollider"
 
+
+class BoxCollision:
+    """ An object that holds all the information about a collision. """
+
+    def __init__(self, object1, object2, collision_side):
+        self.object1 = object1
+        self.object2 = object2
+        if collision_side is None:
+            self.collision_side = Vector(0, 0)
+        else:
+            self.collision_side = collision_side

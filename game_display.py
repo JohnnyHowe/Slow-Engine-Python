@@ -64,7 +64,7 @@ def display_rect(rect, window):
     return Rect(pos.x, pos.y, size.x, size.y)
 
 
-def draw_rect(window, rect, color):
+def draw_rect(window, rect, color, width=None):
     """ Draw a rectangle.
 
     Args:
@@ -72,10 +72,15 @@ def draw_rect(window, rect, color):
         rect (Rect): rectangle in pixels.
         color (tuple): color of rect.
     """
-    pygame.draw.rect(window.window, color, tuple(rect.pos() - rect.size() / 2) + tuple(rect.size()))
+    if rect_on_screen(rect, window):
+        py_rect = tuple(rect.pos() - rect.size() / 2) + tuple(rect.size())
+        if width:
+            pygame.draw.rect(window.window, color, py_rect, width)
+        else:
+            pygame.draw.rect(window.window, color, py_rect)
 
 
-def draw_game_rect(window, rect, color):
+def draw_game_rect(window, rect, color, width=None):
     """ Draw a rectangle.
 
     Args:
@@ -83,7 +88,7 @@ def draw_game_rect(window, rect, color):
         rect (Rect): rectangle in game units.
         color (tuple): color of rect.
     """
-    draw_rect(window, display_rect(rect, window), color)
+    draw_rect(window, display_rect(rect, window), color, width=width)
 
 
 def draw_line(window, line, width, color):
@@ -101,3 +106,15 @@ def draw_circle(window, pos, radius, color):
 
 def draw_game_circle(window, pos, radius, color):
     draw_circle(window, display_pos(pos, window), radius * window.game_scale, color)
+
+
+def rect_on_screen(disp_rect, window):
+    for pos in disp_rect.corners():
+        if not pos_on_screen(pos, window):
+            return False
+    return True
+
+
+def pos_on_screen(disp_pos, window):
+    """ Is the pos on the screen. """
+    return 0 <= disp_pos.x <= window.size.x and 0 <= disp_pos.y <= window.size.y

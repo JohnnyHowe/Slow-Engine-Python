@@ -7,11 +7,12 @@ class Clock:
         self.last_frame_time = self.start_time
         self.on_time = 0
 
+        self.max_dtime = 0.2
         self.dtime = 1
 
     def update(self):
         current_time = time.time()
-        self.dtime = current_time - self.last_frame_time
+        self.dtime = min(current_time - self.last_frame_time, self.max_dtime)
         self.last_frame_time = current_time
         self.on_time = time.time() - self.start_time
 

@@ -47,6 +47,12 @@ class Vector:
     def __abs__(self):
         return Vector(abs(self.x), abs(self.y))
 
+    def floor(self):
+        return Vector(int(self.x), int(self.y))
+
+    def __floordiv__(self, n):
+        return Vector(int(self.x / n), int(self.y / n))
+
 
 class Rect:
     def __init__(self, x, y, w, h):
@@ -82,8 +88,19 @@ class Rect:
         return self.y - self.h / 2
 
     def corners(self):
-        return [(self.left(), self.top()), (self.right(), self.top()),
-                (self.right(), self.bottom(), self.left(), self.bottom())]
+        return [self.top_left(), self.top_right(), self.bottom_right(), self.bottom_left()]
+
+    def bottom_left(self):
+        return Vector(self.left(), self.bottom())
+
+    def top_left(self):
+        return Vector(self.left(), self.top())
+
+    def top_right(self):
+        return Vector(self.right(), self.top())
+
+    def bottom_right(self):
+        return Vector(self.right(), self.bottom())
 
     def __mul__(self, n):
         return Rect(self.x * n, self.y * n, self.w * n, self.h * n)
@@ -101,6 +118,18 @@ class Rect:
     def __repr__(self, n=1):
         self.__str__(n=16)
 
+    def __sub__(self, other):
+        return Rect(self.x - other.x, self.y - other.y, self.w - other.w, self.h - other.h)
+
+    # def floor(self, n):
+    #     return Rect(self.x // n, self.y // n, self.w // n, self.h // n)
+
+    # def floor(self):
+    #     return Rect(int(self.x), int(self.y), int(self.w), int(self.h))
+
+    def copy(self):
+        return Rect(self.x, self.y, self.w, self.h)
+
 
 def new_rect(rect_tuple):
     return Rect(rect_tuple[0], rect_tuple[1], rect_tuple[2], rect_tuple[3])
@@ -111,5 +140,5 @@ class Line:
         self.start = start
         self.end = end
 
-
-
+    def __mul__(self, other):
+        return Line(self.start * other, self.end * other)

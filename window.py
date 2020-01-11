@@ -5,12 +5,15 @@ from .geometery import *
 
 class Window:
     """ Object to control the pygame window. """
-    def __init__(self, size):
+    def __init__(self, size, units_per_axis=10):
         self.size = None
-        self.units_per_axis = 10
+        self.units_per_axis = units_per_axis
         self.game_scale = None
         self.window = None
         self.set_window(size)
+
+    def set_caption(self, caption):
+        pygame.display.set_caption(str(caption))
 
     def set_window(self, size):
         """ Set self.size (Vector), self.window (pygame.Surface) and self.game_scale. """

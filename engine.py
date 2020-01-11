@@ -20,8 +20,8 @@ class Engine:
         self.mouse.update(self)
         self.keyboard.update()
 
-    def set_window(self, size):
-        self.window = Window(size)
+    def set_window(self, size, units_per_axis=10):
+        self.window = Window(size, units_per_axis)
 
     def set_event_dict(self):
         self.events = {}
