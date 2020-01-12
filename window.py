@@ -1,5 +1,4 @@
 import pygame
-from .game_display import draw_game_line
 from .geometery import *
 
 
@@ -8,11 +7,12 @@ class Window:
     def __init__(self, size, units_per_axis=10):
         self.size = None
         self.units_per_axis = units_per_axis
-        self.game_scale = None
+        self.game_scale = None  # min(window.size) / units_per_axis
         self.window = None
         self.set_window(size)
 
-    def set_caption(self, caption):
+    @staticmethod
+    def set_caption(caption):
         pygame.display.set_caption(str(caption))
 
     def set_window(self, size):
@@ -34,7 +34,8 @@ class Window:
         self.quit_button(engine)
         self.control_size(engine)
 
-    def quit_button(self, engine):
+    @staticmethod
+    def quit_button(engine):
         """ If the window quit button is pressed, close down the game. """
         if pygame.QUIT in engine.events:
             quit()
@@ -45,12 +46,4 @@ class Window:
             event = engine.events[pygame.VIDEORESIZE]
             self.set_window(Vector(event.w, event.h))
 
-    def draw_grid(self, xy_max=5, line_width=0.05, line_color=(200, 200, 200)):
-        num_lines = (xy_max + 1) * 2
-        lines = []
-        for i in range(1, num_lines):
-            lines.append(Line(Vector(i - num_lines // 2, -num_lines // 2), Vector(i - num_lines // 2, num_lines // 2)))
-            lines.append(Line(Vector(-num_lines // 2, i - num_lines // 2), Vector(num_lines // 2, i - num_lines // 2)))
-        for line in lines:
-            draw_game_line(self, line, 1, line_color)
 

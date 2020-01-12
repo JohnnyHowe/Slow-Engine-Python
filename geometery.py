@@ -11,7 +11,6 @@ class Vector:
         return math.sqrt(self.x ** 2 + self.y ** 2)
 
     def copy(self):
-        """ Return a copy of self. """
         return Vector(self.x, self.y)
 
     def __iter__(self):
@@ -19,23 +18,18 @@ class Vector:
             yield value
 
     def __round__(self, n=None):
-        """ Return a vector where the values are all rounded. """
         return Vector(round(self.x, n), round(self.y, n))
 
     def __truediv__(self, n):
-        """ Return a copy of self where the values are divided by n. """
         return Vector(self.x / n, self.y / n)
 
     def __mul__(self, n):
-        """ Return a copy of self where the values are multiplied by n. """
         return Vector(self.x * n, self.y * n)
 
     def __add__(self, other):
-        """ Return a vector where the values are the sum of the corresponding values of self and other. """
         return Vector(self.x + other.x, self.y + other.y)
 
     def __sub__(self, other):
-        """ Return a vector where the values are the difference between the corresponding values of self and other. """
         return Vector(self.x - other.x, self.y - other.y)
 
     def __str__(self):
@@ -47,14 +41,12 @@ class Vector:
     def __abs__(self):
         return Vector(abs(self.x), abs(self.y))
 
-    def floor(self):
-        return Vector(int(self.x), int(self.y))
-
     def __floordiv__(self, n):
         return Vector(int(self.x / n), int(self.y / n))
 
 
 class Rect:
+    """ Like a vector but with w and h. """
     def __init__(self, x, y, w, h):
         self.x = x
         self.y = y
@@ -102,6 +94,9 @@ class Rect:
     def bottom_right(self):
         return Vector(self.right(), self.bottom())
 
+    def copy(self):
+        return Rect(self.x, self.y, self.w, self.h)
+
     def __mul__(self, n):
         return Rect(self.x * n, self.y * n, self.w * n, self.h * n)
 
@@ -120,19 +115,6 @@ class Rect:
 
     def __sub__(self, other):
         return Rect(self.x - other.x, self.y - other.y, self.w - other.w, self.h - other.h)
-
-    # def floor(self, n):
-    #     return Rect(self.x // n, self.y // n, self.w // n, self.h // n)
-
-    # def floor(self):
-    #     return Rect(int(self.x), int(self.y), int(self.w), int(self.h))
-
-    def copy(self):
-        return Rect(self.x, self.y, self.w, self.h)
-
-
-def new_rect(rect_tuple):
-    return Rect(rect_tuple[0], rect_tuple[1], rect_tuple[2], rect_tuple[3])
 
 
 class Line:

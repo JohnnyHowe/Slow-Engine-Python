@@ -1,24 +1,17 @@
 import pygame
-from .mouse import Mouse
-from .keys import KeyInput
 from .window import Window
-from .clock import Clock
+from .camera import Camera
 
 
 class Engine:
     def __init__(self):
         self.window = None
+        self.camera = Camera()
         self.events = {}
-        self.mouse = Mouse()
-        self.keyboard = KeyInput()
-        self.clock = Clock()
 
     def update(self):
-        self.clock.update()
-        self.set_event_dict()
         self.window.update(self)
-        self.mouse.update(self)
-        self.keyboard.update()
+        self.set_event_dict()
 
     def set_window(self, size, units_per_axis=10):
         self.window = Window(size, units_per_axis)
